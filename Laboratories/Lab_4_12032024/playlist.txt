@@ -1,0 +1,17 @@
+4
+1
+Master Of Puppets
+Metallica
+0.450
+2
+Raining Blood
+Slayer
+0.616
+3
+Mein Herz brennt
+Rammstein
+0.732
+4
+Du Hast
+Rammstein
+0.597
