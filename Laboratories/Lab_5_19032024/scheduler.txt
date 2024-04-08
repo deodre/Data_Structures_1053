@@ -1,0 +1,16 @@
+5
+100
+Web Browser
+10.45
+200
+Image Viewer
+5.70
+300
+Multiplayer Game
+40.21
+400
+Music Player
+3.23
+500
+Code Editor
+4.90
