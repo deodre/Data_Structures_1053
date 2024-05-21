@@ -24,7 +24,7 @@ struct TreeNode {
 
 
 FileProperties readOneFromFile(FILE* f) {
-	
+
 	FileProperties fileProperties;
 	char buffer[LINESIZE];
 
@@ -32,8 +32,8 @@ FileProperties readOneFromFile(FILE* f) {
 	char* data = NULL;
 
 	fgets(buffer, LINESIZE, f);
-	fileProperties.fileId = (int) strtol(strtok_s(buffer, ",", &token), NULL, 10);
-	
+	fileProperties.fileId = (int)strtol(strtok_s(buffer, ",", &token), NULL, 10);
+
 	data = strtok_s(NULL, ",", &token);
 	fileProperties.fileName = malloc((strlen(data) + 1) * sizeof(char));
 	strcpy_s(fileProperties.fileName, strlen(data) + 1, data);
@@ -67,7 +67,7 @@ void readAllFromFile(const char* filename, FileProperties** filePropertiesArray,
 }
 
 void printFilePropertiesToConsole(FileProperties fileProperties) {
-	printf("%d. %s - %d B %d\n", fileProperties.fileId, fileProperties.fileName, fileProperties.size, fileProperties.isFolder);
+	printf("%d. %s - %dB %d\n", fileProperties.fileId, fileProperties.fileName, fileProperties.size, fileProperties.isFolder);
 }
 
 void insertTreeNode(TreeNode** root, FileProperties fileProperties) {
@@ -102,7 +102,7 @@ void preorderTraversal(TreeNode* root) {
 		preorderTraversal(root->left);
 		preorderTraversal(root->right);
 	}
-	
+
 }
 
 void postorderTraversal(TreeNode* root) {
@@ -127,25 +127,96 @@ FileProperties searchTree(TreeNode* root, int fileId) {
 		}
 	}
 	else {
-		FileProperties fileProperties = { .fileId = 0, .fileName = "ERR", .isFolder = 0, .size = 0};
+		FileProperties fileProperties = { .fileId = 0, .fileName = "ERR", .isFolder = 0, .size = 0 };
 		return fileProperties;
 	}
 }
 
 int treeHeight(TreeNode* root) {
+
 	if (root) {
-		int leftHeight = treeHeight(root->left);
-		int rightHeight = treeHeight(root->right);
-		return 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+
+		int hLeft = treeHeight(root->left);
+		int hRight = treeHeight(root->right);
+
+		return 1 + (hLeft > hRight ? hLeft : hRight);
 	}
 	else {
 		return 0;
+	}
+
+}
+
+int balanceFactor(TreeNode* root) {
+	if (root) {
+		int hLeft = treeHeight(root->left);
+		int hRight = treeHeight(root->right);
+
+		return hRight - hLeft;
+	}
+
+	return 0;
+}
+
+void rightRotation(TreeNode** root) {
+	TreeNode* aux = (*root)->left;
+	(*root)->left = aux->right;
+	aux->right = *root;
+	*root = aux;
+}
+
+void leftRotation(TreeNode** root) {
+	TreeNode* aux = (*root)->right;
+	(*root)->right = aux->left;
+	aux->left = *root;
+	*root = aux;
+}
+
+void insertAVLTreeNode(TreeNode** root, FileProperties fileProperties) {
+	if (*root) {
+		if ((*root)->fileProperties.fileId > fileProperties.fileId) {
+			insertAVLTreeNode(&(*root)->left, fileProperties);
+		}
+		else {
+			insertAVLTreeNode(&(*root)->right, fileProperties);
+		}
+
+		int balanceFactorValue = balanceFactor(*root);
+
+		if (balanceFactorValue == 2) {
+			if (balanceFactor((*root)->right) == 1) {
+				leftRotation(root);
+			}
+			else {
+				rightRotation(&(*root)->right);
+				leftRotation(root);
+			}
+
+		}
+
+		if (balanceFactorValue == -2) {
+			if (balanceFactor((*root)->left) == -1) {
+				rightRotation(root);
+			}
+			else {
+				leftRotation(&(*root)->left);
+				rightRotation(root);
+			}
+		}
+
+	}
+	else {
+		TreeNode* newNode = malloc(sizeof(TreeNode));
+		newNode->fileProperties = fileProperties;
+		newNode->left = NULL;
+		newNode->right = NULL;
+		*root = newNode;
 	}
 }
 
 void printTree(TreeNode* root, int space) {
 	if (root) {
-		
+
 		space += COUNT;
 
 		printTree(root->right, space);
@@ -194,100 +265,18 @@ int main() {
 
 	printFilePropertiesToConsole(searchTree(root, 8));
 
+	printf("\n\n\n-------------------- AVL ------------------ \n\n\n\n");
+
+	TreeNode* avlTree = NULL;
+
+	insertAVLTreeNode(&avlTree, filePropertiesArray[0]);
+	insertAVLTreeNode(&avlTree, filePropertiesArray[1]);
+	insertAVLTreeNode(&avlTree, filePropertiesArray[2]);
+	insertAVLTreeNode(&avlTree, filePropertiesArray[3]);
+	insertAVLTreeNode(&avlTree, filePropertiesArray[4]);
+
+	printTree(avlTree, 20);
+
+
 	return 0;
 }
-
-/*
-
-void searchNode(TreeNode* root, int key, TreeNode** found) {
-
-	if (root) {
-		printf("Current node is: %d\n", root->fileProperties.fileId);
-
-		if (key == root->fileProperties.fileId) {
-			*found = root;
-		}
-		else {
-			searchNode(root->child, key, found);
-
-			if (!(*found)) {
-
-				if (root->child) {
-					TreeNode* tmp = root->child;
-					while (tmp->sibling) {
-						if (!(*found)) {
-							tmp = tmp->sibling;
-						}
-						searchNode(tmp, key, found);
-					}
-				}
-			}
-		}
-	}
-}
-
-void insertInTree(TreeNode** root, FileProperties fileProperties, int parentId) {
-
-	TreeNode* newNode = malloc(sizeof(TreeNode));
-	newNode->fileProperties = fileProperties;
-	newNode->sibling = NULL;
-
-	if (!parentId) {
-		printf("\n Insert root node: %d\n", newNode->fileProperties.fileId);
-		newNode->child = *root;
-		*root = newNode;
-	}
-	else {
-		newNode->child = NULL;
-
-		TreeNode* parent = NULL;
-		printf("\n Search parent node by key %d\n", parentId);
-
-
-		searchNode(*root, parentId, &parent);
-
-		if (parent && !parent->child) {
-
-			parent->child = newNode;
-		}
-		else {
-			if (parent) {
-
-				if (!parent->child->sibling) {
-					parent->child->sibling = newNode;
-				}
-				else {
-					TreeNode* tmp = parent->child;
-
-					while (tmp->sibling) {
-						tmp = tmp->sibling;
-					}
-
-					tmp->sibling = newNode;
-				}
-			}
-			else {
-				printf("Parent not found");
-				free(newNode);
-			}
-		}
-	}
-
-}
-
-void preorderTraversal(struct TreeNode* root) {
-	if (root) {
-		printf("%d  ", root->fileProperties.fileId); // prelucrare nod curent
-
-		preorderTraversal(root->child); // parsez primul subarbore descendent lui r
-
-		if (root->sibling) {
-			struct TreeNode* tmp = root->child;
-			while (tmp->sibling) { // parsez restul de subarbori descendenti lui r
-				preorderTraversal(tmp->sibling);
-				tmp = tmp->sibling;
-			}
-		}
-	}
-}
-*/
